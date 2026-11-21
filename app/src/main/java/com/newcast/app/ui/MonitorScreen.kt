@@ -12,7 +12,6 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
@@ -156,7 +155,6 @@ fun MonitorScreen(
     onConnectManualIp: (String) -> Unit,
     onDisconnect: () -> Unit,
     onAttachSurface: (Surface?) -> Unit,
-    onTriggerShutter: () -> Unit,
     onRemoteTap: (Float, Float) -> Unit,
     onRemoteLongPress: (Float, Float) -> Unit,
     onRemoteSwipe: (Float, Float, Float, Float, Long) -> Unit,
@@ -182,7 +180,6 @@ fun MonitorScreen(
             latestFeedbackBanner = latestFeedbackBanner,
             onDisconnect = onDisconnect,
             onAttachSurface = onAttachSurface,
-            onTriggerShutter = onTriggerShutter,
             onRemoteTap = onRemoteTap,
             onRemoteLongPress = onRemoteLongPress,
             onRemoteSwipe = onRemoteSwipe,
@@ -447,7 +444,6 @@ private fun MonitorLiveViewfinder(
     latestFeedbackBanner: String?,
     onDisconnect: () -> Unit,
     onAttachSurface: (Surface?) -> Unit,
-    onTriggerShutter: () -> Unit,
     onRemoteTap: (Float, Float) -> Unit,
     onRemoteLongPress: (Float, Float) -> Unit,
     onRemoteSwipe: (Float, Float, Float, Float, Long) -> Unit,
@@ -470,16 +466,8 @@ private fun MonitorLiveViewfinder(
     var showQualityMenu by remember { mutableStateOf(false) }
     var showBluetoothDialog by remember { mutableStateOf(false) }
 
-    var shutterFlash by remember { mutableStateOf(false) }
     var tapIndicator by remember { mutableStateOf<Pair<Offset, Boolean>?>(null) }
     var swipeTrail by remember { mutableStateOf<Pair<Offset, Offset>?>(null) }
-
-    LaunchedEffect(shutterFlash) {
-        if (shutterFlash) {
-            delay(160L)
-            shutterFlash = false
-        }
-    }
 
     LaunchedEffect(tapIndicator) {
         if (tapIndicator != null) {
@@ -691,15 +679,6 @@ private fun MonitorLiveViewfinder(
                         )
                     }
                 }
-
-                // Crisp white shutter frame flash
-                if (shutterFlash) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .border(2.dp, MonoWhite.copy(alpha = 0.85f))
-                    )
-                }
             }
         }
 
@@ -909,7 +888,7 @@ private fun MonitorLiveViewfinder(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .navigationBarsPadding()
-                .padding(bottom = 104.dp, start = 20.dp, end = 20.dp)
+                .padding(bottom = 24.dp, start = 20.dp, end = 20.dp)
         ) {
             Surface(
                 shape = RoundedCornerShape(999.dp),
@@ -921,38 +900,6 @@ private fun MonitorLiveViewfinder(
                     fontSize = 11.sp,
                     color = MonoWhite,
                     modifier = Modifier.padding(horizontal = 14.dp, vertical = 7.dp)
-                )
-            }
-        }
-
-        // Minimalist Monochrome Camera Shutter Button
-        AnimatedVisibility(
-            visible = showHud,
-            enter = fadeIn(),
-            exit = fadeOut(),
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .navigationBarsPadding()
-                .padding(bottom = 22.dp)
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(72.dp)
-                    .clip(CircleShape)
-                    .background(MonoBlack.copy(alpha = 0.45f))
-                    .border(2.5.dp, MonoWhite, CircleShape)
-                    .clickable {
-                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                        shutterFlash = true
-                        onTriggerShutter()
-                    },
-                contentAlignment = Alignment.Center
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(if (shutterFlash) 48.dp else 56.dp)
-                        .clip(CircleShape)
-                        .background(if (shutterFlash) MonoWhite.copy(alpha = 0.4f) else MonoWhite)
                 )
             }
         }

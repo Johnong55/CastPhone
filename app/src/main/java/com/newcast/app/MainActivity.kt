@@ -223,7 +223,6 @@ class MainActivity : ComponentActivity() {
                         onConnectManualIp = { ip -> viewModel.connectToIp(ip) },
                         onDisconnect = viewModel::disconnectMonitor,
                         onAttachSurface = viewModel::attachMonitorSurface,
-                        onTriggerShutter = viewModel::triggerRemoteShutter,
                         onRemoteTap = viewModel::sendRemoteTap,
                         onRemoteLongPress = viewModel::sendRemoteLongPress,
                         onRemoteSwipe = { x1, y1, x2, y2, dur -> viewModel.sendRemoteSwipe(x1, y1, x2, y2, dur) },
