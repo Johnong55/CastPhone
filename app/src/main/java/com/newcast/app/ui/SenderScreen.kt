@@ -16,14 +16,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Surface
@@ -63,8 +60,7 @@ fun SenderScreen(
     onLaunchPixelCamera: () -> Unit,
     onSelectPreset: (VideoQualityPreset) -> Unit,
     onOpenHotspotSettings: () -> Unit,
-    onOpenAccessibilitySettings: () -> Unit,
-    onOpenAppInfoSettings: () -> Unit
+    onOpenAccessibilitySettings: () -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -72,11 +68,9 @@ fun SenderScreen(
             .background(MonoBlack)
             .statusBarsPadding()
             .navigationBarsPadding()
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = 24.dp, vertical = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(22.dp)
+            .padding(horizontal = 24.dp, vertical = 16.dp)
     ) {
-        // Minimal top navigation
+        // Minimal header
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
@@ -102,15 +96,22 @@ fun SenderScreen(
             )
         }
 
-        // Clean IP & Live status block
-        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Spacer(Modifier.height(28.dp))
+
+        // Live status + IP block
+        Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 StatusDot(active = senderState.isCasting, sizeDp = 8)
+                val shortStatus = when {
+                    !senderState.isCasting -> "Sẵn sàng"
+                    senderState.connectedMonitorName != null -> "Đang chiếu · ${senderState.connectedMonitorName}"
+                    else -> "Đang chờ máy phụ"
+                }
                 Text(
-                    text = senderState.statusText,
+                    text = shortStatus,
                     fontSize = 13.sp,
                     color = if (senderState.isCasting) MonoWhite else MonoTextSecondary
                 )
@@ -134,24 +135,15 @@ fun SenderScreen(
                         color = MonoTextMuted
                     )
                     Text(
-                        text = network.primaryIp ?: "Chưa có IP",
+                        text = network.primaryIp ?: "Offline",
                         fontSize = 26.sp,
                         fontFamily = FontFamily.Monospace,
                         fontWeight = FontWeight.Medium,
                         color = if (network.primaryIp != null) MonoWhite else MonoTextMuted
                     )
-                    if (network.allIps.size > 1) {
-                        Text(
-                            text = network.allIps.drop(1).joinToString(" · "),
-                            fontSize = 11.sp,
-                            fontFamily = FontFamily.Monospace,
-                            color = MonoTextSecondary
-                        )
-                    }
                 }
             }
 
-            // Minimalist 3-column telemetry bar when live
             if (senderState.isCasting) {
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
@@ -182,22 +174,13 @@ fun SenderScreen(
             }
 
             senderState.errorMessage?.let { err ->
-                Surface(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(10.dp),
-                    color = MonoSurface,
-                    border = BorderStroke(1.dp, MonoBorderStrong)
-                ) {
-                    Text(
-                        text = err,
-                        fontSize = 12.sp,
-                        color = MonoTextPrimary,
-                        modifier = Modifier.padding(12.dp)
-                    )
-                }
+                Text(
+                    text = err,
+                    fontSize = 12.sp,
+                    color = MonoTextSecondary
+                )
             }
 
-            // Primary stark monochrome CTA
             if (!senderState.isCasting) {
                 Button(
                     onClick = onStartCasting,
@@ -211,17 +194,17 @@ fun SenderScreen(
                     )
                 ) {
                     Text(
-                        text = "Bắt đầu phát màn hình",
+                        text = "Bắt đầu phát",
                         fontSize = 14.sp,
                         fontWeight = FontWeight.SemiBold
                     )
                 }
             } else {
-                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     Button(
                         onClick = onLaunchPixelCamera,
                         modifier = Modifier
-                            .fillMaxWidth()
+                            .weight(1.4f)
                             .height(52.dp),
                         shape = RoundedCornerShape(12.dp),
                         colors = ButtonDefaults.buttonColors(
@@ -230,32 +213,27 @@ fun SenderScreen(
                         )
                     ) {
                         Text(
-                            text = "Mở Pixel Camera",
+                            text = "Pixel Camera",
                             fontSize = 14.sp,
                             fontWeight = FontWeight.SemiBold
                         )
                     }
 
                     MonoHairlineButton(
-                        label = "Dừng phát",
+                        label = "Dừng",
                         onClick = onStopCasting,
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier
+                            .weight(0.8f)
+                            .height(52.dp)
                     )
                 }
             }
         }
 
-        HorizontalDivider(thickness = 1.dp, color = MonoBorder)
+        Spacer(Modifier.weight(1f))
 
-        // Segmented live quality selector
+        // Compact bottom controls: Quality + Hotspot / Accessibility shortcuts
         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Text(
-                text = "CHẤT LƯỢNG",
-                fontSize = 11.sp,
-                letterSpacing = 2.sp,
-                fontFamily = FontFamily.Monospace,
-                color = MonoTextMuted
-            )
             Surface(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(10.dp),
@@ -285,65 +263,20 @@ fun SenderScreen(
                     }
                 }
             }
-            Text(
-                text = selectedPreset.description,
-                fontSize = 12.sp,
-                color = MonoTextSecondary
-            )
-        }
-
-        HorizontalDivider(thickness = 1.dp, color = MonoBorder)
-
-        // Accessibility & Hotspot controls (minimal, clutter-free)
-        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                StatusDot(active = accessibilityEnabled)
-                Text(
-                    text = if (accessibilityEnabled) {
-                        "Tương tác & chụp từ xa: Đã bật"
-                    } else {
-                        "Tương tác & chụp từ xa: Chưa bật"
-                    },
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = MonoTextPrimary
-                )
-            }
-
-            if (!accessibilityEnabled) {
-                Text(
-                    text = "Bật \"NewCast Remote Shutter\" trong Trợ năng để màn hình phụ chạm lấy nét và bấm chụp. Nếu Android khóa cài đặt bị hạn chế: vào Thông tin app → dấu ⋮ → Cho phép cài đặt bị hạn chế.",
-                    fontSize = 12.sp,
-                    color = MonoTextSecondary,
-                    lineHeight = 17.sp
-                )
-            }
 
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                MonoHairlineButton(
-                    label = "Trợ năng",
-                    onClick = onOpenAccessibilitySettings,
-                    modifier = Modifier.weight(1f)
-                )
-                if (!accessibilityEnabled) {
-                    MonoHairlineButton(
-                        label = "Thông tin app",
-                        onClick = onOpenAppInfoSettings,
-                        modifier = Modifier.weight(1f)
-                    )
-                }
                 MonoHairlineButton(
                     label = "Hotspot",
                     onClick = onOpenHotspotSettings,
                     modifier = Modifier.weight(1f)
                 )
+                MonoHairlineButton(
+                    label = if (accessibilityEnabled) "● Trợ năng" else "○ Trợ năng",
+                    onClick = onOpenAccessibilitySettings,
+                    modifier = Modifier.weight(1f)
+                )
             }
         }
-
-        Spacer(Modifier.height(12.dp))
     }
 }
 
@@ -365,7 +298,7 @@ private fun MonoMetric(label: String, value: String) {
             fontSize = 13.sp,
             fontFamily = FontFamily.Monospace,
             fontWeight = FontWeight.Medium,
-            color = MonoWhite
+            color = MonoTextPrimary
         )
     }
 }

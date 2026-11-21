@@ -36,7 +36,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Bluetooth
@@ -228,11 +227,9 @@ private fun MonitorDiscoveryLobby(
             .background(MonoBlack)
             .statusBarsPadding()
             .navigationBarsPadding()
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = 24.dp, vertical = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(22.dp)
+            .padding(horizontal = 24.dp, vertical = 16.dp)
     ) {
-        // Minimal top navigation
+        // Minimal header
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
@@ -262,7 +259,9 @@ private fun MonitorDiscoveryLobby(
             MonoHairlineButton(label = "Wi-Fi", onClick = onOpenWifiSettings)
         }
 
-        // Minimal network summary line
+        Spacer(Modifier.height(20.dp))
+
+        // Compact network status line
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
@@ -274,99 +273,66 @@ private fun MonitorDiscoveryLobby(
             ) {
                 StatusDot(active = network.primaryIp != null)
                 Text(
-                    text = network.linkType.label,
-                    fontSize = 13.sp,
-                    color = MonoTextPrimary
+                    text = network.primaryIp ?: "Offline",
+                    fontSize = 12.sp,
+                    fontFamily = FontFamily.Monospace,
+                    color = MonoTextSecondary
                 )
             }
+            if (connectionState is MonitorConnectionState.Connecting) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(14.dp),
+                        strokeWidth = 1.5.dp,
+                        color = MonoWhite
+                    )
+                    Text(
+                        text = connectionState.targetIp,
+                        fontSize = 11.sp,
+                        fontFamily = FontFamily.Monospace,
+                        color = MonoWhite
+                    )
+                }
+            }
+        }
+
+        if (connectionState is MonitorConnectionState.Error) {
+            Spacer(Modifier.height(12.dp))
             Text(
-                text = network.primaryIp ?: "Offline",
+                text = connectionState.message,
                 fontSize = 12.sp,
-                fontFamily = FontFamily.Monospace,
                 color = MonoTextSecondary
             )
         }
 
-        // Connecting / Error indicator
-        when (connectionState) {
-            is MonitorConnectionState.Connecting -> {
-                Surface(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
-                    color = MonoSurface,
-                    border = BorderStroke(1.dp, MonoBorderStrong)
-                ) {
-                    Row(
-                        modifier = Modifier.padding(14.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(16.dp),
-                            strokeWidth = 1.8.dp,
-                            color = MonoWhite
-                        )
-                        Text(
-                            text = "Đang kết nối tới ${connectionState.targetIp}...",
-                            fontSize = 13.sp,
-                            fontFamily = FontFamily.Monospace,
-                            color = MonoTextPrimary
-                        )
-                    }
-                }
-            }
-            is MonitorConnectionState.Error -> {
-                Surface(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
-                    color = MonoSurface,
-                    border = BorderStroke(1.dp, MonoBorderStrong)
-                ) {
-                    Text(
-                        text = connectionState.message,
-                        fontSize = 12.sp,
-                        color = MonoTextPrimary,
-                        modifier = Modifier.padding(14.dp)
-                    )
-                }
-            }
-            else -> Unit
-        }
-
+        Spacer(Modifier.height(24.dp))
         HorizontalDivider(thickness = 1.dp, color = MonoBorder)
+        Spacer(Modifier.height(20.dp))
 
-        // Discovered senders section
-        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Text(
-                text = "THIẾT BỊ ĐANG PHÁT",
-                fontSize = 11.sp,
-                letterSpacing = 2.sp,
-                fontFamily = FontFamily.Monospace,
-                color = MonoTextMuted
-            )
-
+        // Discovered peers list (capped cleanly so it never scrolls)
+        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
             if (discoveredPeers.isEmpty()) {
                 Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 12.dp),
+                    modifier = Modifier.padding(vertical = 8.dp),
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     CircularProgressIndicator(
-                        modifier = Modifier.size(16.dp),
+                        modifier = Modifier.size(15.dp),
                         strokeWidth = 1.5.dp,
                         color = MonoTextMuted
                     )
                     Text(
-                        text = "Đang quét Hotspot / Wi-Fi...\nMở Máy Quay → Bắt đầu phát màn hình trên máy kia.",
-                        fontSize = 12.sp,
-                        color = MonoTextSecondary,
-                        lineHeight = 18.sp
+                        text = "Đang tìm máy quay...",
+                        fontSize = 13.sp,
+                        color = MonoTextSecondary
                     )
                 }
             } else {
-                discoveredPeers.forEach { peer ->
+                discoveredPeers.take(3).forEach { peer ->
                     Surface(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -382,7 +348,7 @@ private fun MonitorDiscoveryLobby(
                         ) {
                             Column(
                                 modifier = Modifier.weight(1f),
-                                verticalArrangement = Arrangement.spacedBy(3.dp)
+                                verticalArrangement = Arrangement.spacedBy(2.dp)
                             ) {
                                 Text(
                                     text = peer.deviceName,
@@ -391,7 +357,7 @@ private fun MonitorDiscoveryLobby(
                                     color = MonoWhite
                                 )
                                 Text(
-                                    text = "${peer.ipAddress} · ${if (peer.accessibilityReady) "Chạm & chụp sẵn sàng" else "Chỉ xem"}",
+                                    text = peer.ipAddress,
                                     fontSize = 11.sp,
                                     fontFamily = FontFamily.Monospace,
                                     color = MonoTextSecondary
@@ -415,27 +381,24 @@ private fun MonitorDiscoveryLobby(
             }
         }
 
-        HorizontalDivider(thickness = 1.dp, color = MonoBorder)
+        Spacer(Modifier.weight(1f))
 
-        // Manual IP fallback
-        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Text(
-                text = "KẾT NỐI BẰNG IP",
-                fontSize = 11.sp,
-                letterSpacing = 2.sp,
-                fontFamily = FontFamily.Monospace,
-                color = MonoTextMuted
-            )
-
+        // Compact single-row IP connect bar at bottom
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
             OutlinedTextField(
                 value = manualIp,
                 onValueChange = onUpdateManualIp,
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.weight(1f),
                 singleLine = true,
                 placeholder = {
                     Text(
                         text = "192.168.43.1",
                         fontFamily = FontFamily.Monospace,
+                        fontSize = 13.sp,
                         color = MonoTextMuted
                     )
                 },
@@ -461,16 +424,14 @@ private fun MonitorDiscoveryLobby(
 
             Button(
                 onClick = { onConnectManualIp(manualIp) },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(48.dp),
+                modifier = Modifier.height(54.dp),
                 shape = RoundedCornerShape(12.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = MonoWhite,
                     contentColor = MonoInk
                 )
             ) {
-                Text("Kết nối", fontWeight = FontWeight.SemiBold)
+                Text("Nối", fontWeight = FontWeight.SemiBold)
             }
         }
     }
@@ -823,22 +784,6 @@ private fun MonitorLiveViewfinder(
                             icon = Icons.Rounded.Close,
                             contentDescription = "Ngắt kết nối",
                             onClick = onDisconnect
-                        )
-                    }
-                }
-
-                // Quiet monochrome notice when Sender Accessibility is disabled
-                if (connectedInfo != null && !connectedInfo.accessibilityReady) {
-                    Surface(
-                        shape = RoundedCornerShape(8.dp),
-                        color = MonoBlack.copy(alpha = 0.72f),
-                        border = BorderStroke(1.dp, MonoWhite.copy(alpha = 0.2f))
-                    ) {
-                        Text(
-                            text = "Máy Quay chưa bật Trợ năng \"NewCast Remote Shutter\" — chỉ đang xem.",
-                            fontSize = 11.sp,
-                            color = MonoTextSecondary,
-                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
                         )
                     }
                 }

@@ -8,7 +8,6 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.media.projection.MediaProjectionConfig
 import android.media.projection.MediaProjectionManager
-import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.MediaStore
@@ -185,15 +184,13 @@ class MainActivity : ComponentActivity() {
                         isSenderCasting = senderState.isCasting,
                         selectedPreset = preset,
                         selectedTransport = transport,
-                        accessibilityEnabled = accessibilityEnabled,
                         onSelectSender = { viewModel.selectRole(AppRole.SENDER) },
                         onSelectMonitor = { viewModel.selectRole(AppRole.MONITOR) },
                         onSelectPreset = viewModel::setPreset,
                         onSelectTransport = viewModel::setTransportMode,
                         onRefreshNetwork = viewModel::refreshSystemStatus,
                         onOpenHotspotSettings = ::openHotspotSettings,
-                        onOpenWifiSettings = ::openWifiSettings,
-                        onOpenAccessibilitySettings = ::openAccessibilitySettings
+                        onOpenWifiSettings = ::openWifiSettings
                     )
 
                     AppRole.SENDER -> SenderScreen(
@@ -207,8 +204,7 @@ class MainActivity : ComponentActivity() {
                         onLaunchPixelCamera = ::launchPixelCamera,
                         onSelectPreset = viewModel::setPreset,
                         onOpenHotspotSettings = ::openHotspotSettings,
-                        onOpenAccessibilitySettings = ::openAccessibilitySettings,
-                        onOpenAppInfoSettings = ::openAppDetailsSettings
+                        onOpenAccessibilitySettings = ::openAccessibilitySettings
                     )
 
                     AppRole.MONITOR -> MonitorScreen(
@@ -328,17 +324,6 @@ class MainActivity : ComponentActivity() {
     private fun openAccessibilitySettings() {
         try {
             startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
-        } catch (_: Exception) {
-            startActivity(Intent(Settings.ACTION_SETTINGS))
-        }
-    }
-
-    private fun openAppDetailsSettings() {
-        try {
-            val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
-                data = Uri.fromParts("package", packageName, null)
-            }
-            startActivity(intent)
         } catch (_: Exception) {
             startActivity(Intent(Settings.ACTION_SETTINGS))
         }

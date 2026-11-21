@@ -17,17 +17,14 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowForward
 import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -49,7 +46,6 @@ import com.newcast.app.ui.theme.MonoBorder
 import com.newcast.app.ui.theme.MonoBorderStrong
 import com.newcast.app.ui.theme.MonoInk
 import com.newcast.app.ui.theme.MonoSurface
-import com.newcast.app.ui.theme.MonoSurfaceRaised
 import com.newcast.app.ui.theme.MonoTextMuted
 import com.newcast.app.ui.theme.MonoTextPrimary
 import com.newcast.app.ui.theme.MonoTextSecondary
@@ -61,18 +57,23 @@ fun HomeScreen(
     isSenderCasting: Boolean,
     selectedPreset: VideoQualityPreset,
     selectedTransport: TransportMode,
-    accessibilityEnabled: Boolean,
     onSelectSender: () -> Unit,
     onSelectMonitor: () -> Unit,
     onSelectPreset: (VideoQualityPreset) -> Unit,
     onSelectTransport: (TransportMode) -> Unit,
     onRefreshNetwork: () -> Unit,
     onOpenHotspotSettings: () -> Unit,
-    onOpenWifiSettings: () -> Unit,
-    onOpenAccessibilitySettings: () -> Unit
+    onOpenWifiSettings: () -> Unit
 ) {
     val deviceName = NetworkHelper.getDeviceDisplayName()
     val isOnline = network.linkType != NetworkLinkType.OFFLINE && network.primaryIp != null
+    val band = network.wifiFrequencyMhz?.let { freq ->
+        when {
+            freq >= 5900 -> "6GHz"
+            freq >= 4900 -> "5GHz"
+            else -> "2.4GHz"
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -80,11 +81,9 @@ fun HomeScreen(
             .background(MonoBlack)
             .statusBarsPadding()
             .navigationBarsPadding()
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = 24.dp, vertical = 20.dp),
-        verticalArrangement = Arrangement.spacedBy(24.dp)
+            .padding(horizontal = 24.dp, vertical = 20.dp)
     ) {
-        // Minimalist Wordmark Header
+        // Header
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
@@ -118,109 +117,64 @@ fun HomeScreen(
             }
         }
 
-        // Minimal Network Strip
-        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Spacer(Modifier.height(22.dp))
+
+        // Compact single-line network status + quick actions
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
             Row(
-                modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    StatusDot(active = isOnline)
-                    Text(
-                        text = network.linkType.label,
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = if (isOnline) MonoTextPrimary else MonoTextSecondary
-                    )
-                }
-
-                if (isOnline) {
-                    val band = network.wifiFrequencyMhz?.let { freq ->
-                        when {
-                            freq >= 5900 -> "6GHz"
-                            freq >= 4900 -> "5GHz"
-                            else -> "2.4GHz"
-                        }
-                    }
-                    Text(
-                        text = listOfNotNull(network.primaryIp, band).joinToString(" · "),
-                        fontSize = 12.sp,
-                        fontFamily = FontFamily.Monospace,
-                        color = MonoTextSecondary
-                    )
-                }
-            }
-
-            if (network.wifiFrequencyMhz != null && !network.is5GhzOrHigher) {
+                StatusDot(active = isOnline)
                 Text(
-                    text = "Đang ở 2.4GHz — nên bật Hotspot 5GHz để mượt 60fps.",
-                    fontSize = 11.sp,
-                    color = MonoTextMuted
+                    text = if (isOnline) {
+                        listOfNotNull(network.primaryIp, band).joinToString(" · ")
+                    } else {
+                        "Offline"
+                    },
+                    fontSize = 12.sp,
+                    fontFamily = FontFamily.Monospace,
+                    color = if (isOnline) MonoTextPrimary else MonoTextSecondary
                 )
             }
 
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                MonoHairlineButton(
-                    label = "Hotspot",
-                    onClick = onOpenHotspotSettings,
-                    modifier = Modifier.weight(1f)
-                )
-                MonoHairlineButton(
-                    label = "Wi-Fi",
-                    onClick = onOpenWifiSettings,
-                    modifier = Modifier.weight(1f)
-                )
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                MonoCompactChip(label = "Hotspot", onClick = onOpenHotspotSettings)
+                MonoCompactChip(label = "Wi-Fi", onClick = onOpenWifiSettings)
             }
         }
 
+        Spacer(Modifier.height(24.dp))
         HorizontalDivider(thickness = 1.dp, color = MonoBorder)
+        Spacer(Modifier.height(24.dp))
 
-        // Primary Role Selection (2 crisp monochrome tiles)
+        // Two primary role tiles (no scroll, generous proportions)
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Text(
-                text = "CHẾ ĐỘ",
-                fontSize = 11.sp,
-                letterSpacing = 2.sp,
-                fontFamily = FontFamily.Monospace,
-                color = MonoTextMuted
-            )
-
             MonoRoleTile(
                 index = "01",
-                title = if (isSenderCasting) "Máy Quay · Đang phát" else "Máy Quay",
-                subtitle = if (isSenderCasting) {
-                    "Đang phát nền — chạm để mở lại bảng điều khiển"
-                } else {
-                    "Phát toàn màn hình cho Pixel Camera gốc"
-                },
+                title = "Máy Quay",
+                meta = if (isSenderCasting) "Đang phát" else "Phát màn hình",
+                highlight = isSenderCasting,
                 onClick = onSelectSender
             )
 
             MonoRoleTile(
                 index = "02",
                 title = "Màn Hình Phụ",
-                subtitle = "Xem 60fps, chạm lấy nét & bấm chụp từ xa",
+                meta = "Xem & điều khiển",
+                highlight = false,
                 onClick = onSelectMonitor
             )
         }
 
-        HorizontalDivider(thickness = 1.dp, color = MonoBorder)
+        Spacer(Modifier.weight(1f))
 
-        // Stream Configuration (segmented minimalist controls)
-        Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
-            Text(
-                text = "CHẤT LƯỢNG & KẾT NỐI",
-                fontSize = 11.sp,
-                letterSpacing = 2.sp,
-                fontFamily = FontFamily.Monospace,
-                color = MonoTextMuted
-            )
-
-            // 3-way Segmented Quality Selector
+        // Clean bottom segmented controls (zero verbose text)
+        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Surface(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(10.dp),
@@ -251,13 +205,6 @@ fun HomeScreen(
                 }
             }
 
-            Text(
-                text = selectedPreset.description,
-                fontSize = 12.sp,
-                color = MonoTextSecondary
-            )
-
-            // 2-way Segmented Transport Selector
             Surface(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(10.dp),
@@ -267,11 +214,7 @@ fun HomeScreen(
                 Row(modifier = Modifier.padding(3.dp)) {
                     TransportMode.entries.forEach { mode ->
                         val selected = mode == selectedTransport
-                        val shortLabel = if (mode == TransportMode.UDP_LOW_LATENCY) {
-                            "UDP · Mượt nhất"
-                        } else {
-                            "TCP · Ổn định"
-                        }
+                        val label = if (mode == TransportMode.UDP_LOW_LATENCY) "UDP" else "TCP"
                         Box(
                             modifier = Modifier
                                 .weight(1f)
@@ -282,8 +225,9 @@ fun HomeScreen(
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
-                                text = shortLabel,
+                                text = label,
                                 fontSize = 12.sp,
+                                fontFamily = FontFamily.Monospace,
                                 fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
                                 color = if (selected) MonoInk else MonoTextSecondary
                             )
@@ -292,51 +236,6 @@ fun HomeScreen(
                 }
             }
         }
-
-        HorizontalDivider(thickness = 1.dp, color = MonoBorder)
-
-        // Minimal Remote Shutter / Accessibility Row
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(2.dp)
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    StatusDot(active = accessibilityEnabled)
-                    Text(
-                        text = "Điều khiển chạm & chụp từ xa",
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = MonoTextPrimary
-                    )
-                }
-                Text(
-                    text = if (accessibilityEnabled) {
-                        "Trợ năng đã bật trên máy này"
-                    } else {
-                        "Cần bật trên Máy Quay để chạm & chụp qua Wi-Fi"
-                    },
-                    fontSize = 11.sp,
-                    color = MonoTextSecondary
-                )
-            }
-            if (!accessibilityEnabled) {
-                Spacer(Modifier.width(12.dp))
-                MonoHairlineButton(
-                    label = "Bật",
-                    onClick = onOpenAccessibilitySettings
-                )
-            }
-        }
-
-        Spacer(Modifier.height(8.dp))
     }
 }
 
@@ -377,7 +276,7 @@ internal fun MonoHairlineButton(
         border = BorderStroke(1.dp, MonoBorder)
     ) {
         Box(
-            modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 11.dp),
             contentAlignment = Alignment.Center
         ) {
             Text(
@@ -391,10 +290,33 @@ internal fun MonoHairlineButton(
 }
 
 @Composable
+private fun MonoCompactChip(
+    label: String,
+    onClick: () -> Unit
+) {
+    Surface(
+        modifier = Modifier
+            .clip(RoundedCornerShape(8.dp))
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(8.dp),
+        color = MonoSurface,
+        border = BorderStroke(1.dp, MonoBorder)
+    ) {
+        Text(
+            text = label,
+            fontSize = 11.sp,
+            color = MonoTextSecondary,
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+        )
+    }
+}
+
+@Composable
 private fun MonoRoleTile(
     index: String,
     title: String,
-    subtitle: String,
+    meta: String,
+    highlight: Boolean,
     onClick: () -> Unit
 ) {
     Surface(
@@ -404,12 +326,12 @@ private fun MonoRoleTile(
             .clickable(onClick = onClick),
         shape = RoundedCornerShape(14.dp),
         color = MonoSurface,
-        border = BorderStroke(1.dp, MonoBorderStrong)
+        border = BorderStroke(1.dp, if (highlight) MonoWhite else MonoBorderStrong)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 18.dp, vertical = 20.dp),
+                .padding(horizontal = 18.dp, vertical = 22.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
@@ -421,16 +343,16 @@ private fun MonoRoleTile(
             Spacer(Modifier.width(16.dp))
             Column(
                 modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(3.dp)
+                verticalArrangement = Arrangement.spacedBy(2.dp)
             ) {
                 Text(
                     text = title,
-                    style = MaterialTheme.typography.titleMedium,
+                    fontSize = 17.sp,
                     fontWeight = FontWeight.Medium,
                     color = MonoWhite
                 )
                 Text(
-                    text = subtitle,
+                    text = meta,
                     fontSize = 12.sp,
                     color = MonoTextSecondary
                 )
