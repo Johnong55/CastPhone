@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">NewCast</string>
+    <string name="accessibility_service_label">NewCast Remote Shutter</string>
+    <string name="accessibility_service_description">Cho phép máy màn hình phụ bấm chụp ảnh, bắt đầu/dừng quay video và chạm lấy nét từ xa trực tiếp trên app Pixel Camera gốc qua Hotspot/Wi-Fi nội bộ.</string>
+</resources>
